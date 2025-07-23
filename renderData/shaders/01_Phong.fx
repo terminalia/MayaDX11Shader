@@ -64,15 +64,6 @@ float3 gDiffuseColor : DIFFUSE <
     string UIWidget = "Color";
 > = {1.0f,1.0f,1.0f};
 
-float gDiffuseStrength <
-    string UIGroup = "Diffuse";
-    string UIName = "Diffuse Strength";
-    string UIWidget = "slider";
-    float UIMin = 0.0f;
-	float UIMax = 1.0f;
-    float UIStep = 0.01f;
-> = 1.0f;
-
 //-------------------------------------------------------------------
 // SHADOWS
 Texture2D light0ShadowMap : SHADOWMAP
