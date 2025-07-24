@@ -285,6 +285,62 @@ float normalMapStrength
 	int UIOrder = 33;
 > = {0.5f};
 
+
+//-------------------------------------------------------------------
+// REFLECTION
+
+TextureCube CubemapTexture : environment
+<
+	string UIGroup = "Reflection";
+	string ResourceName = "";
+	string UIWidget = "FilePicker";
+	string UIName = "Reflection CubeMap";	// Note: do not rename to 'Reflection Cube Map'. This is named this way for backward compatibilty (resave after compat_maya_2013ff10.mel)
+	string ResourceType = "Cube";
+	int mipmaplevels = 0; // Use (or load) max number of mip map levels so we can use blurring
+	int UIOrder = 40;
+	int UVEditorOrder = 6;
+>;
+
+SamplerState SamplerCubemap
+{
+	Filter = ANISOTROPIC;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+float reflectionStrength
+<
+	string UIGroup = "Reflection";
+	string UIWidget = "Slider";
+	string UIName = "Reflection Strength";
+	float UIMin = 0.000;
+	float UISoftMax = 1.000;
+	float UIStep = 0.001;
+	int UIOrder = 41;
+> = {0.0f};
+
+float reflectionContrast
+<
+	string UIGroup = "Reflection";
+	string UIWidget = "Slider";
+	string UIName = "Reflection Contrast";
+	float UIMin = 0.000;
+	float UISoftMax = 10.000;
+	float UIStep = 0.001;
+	int UIOrder = 42;
+> = {3.5f};
+
+float reflectionBlur
+<
+	string UIGroup = "Reflection";
+	string UIWidget = "Slider";
+	string UIName = "Reflection Blur";
+	float UIMin = 0.000;
+	float UISoftMax = 10.000;
+	float UIStep = 0.001;
+	int UIOrder = 43;
+> = {0.0f};
+
 //-------------------------------------------------------------------
 // SHADOWS
 
@@ -308,7 +364,7 @@ float shadowDepthBias : ShadowMapBias
 		float UISoftMax = 10.000;
 		float UIStep = 0.001;
 		string UIName = "Shadow Bias";
-		int UIOrder = 30;
+		int UIOrder = 50;
 > = {0.01f};
 
 float shadowMultiplier
@@ -319,8 +375,8 @@ float shadowMultiplier
 		float UIMax = 1.000;
 		float UIStep = 0.001;
 		string UIName = "Shadow Strength";
-		int UIOrder = 31;
-> = {1.0f};
+		int UIOrder = 51;
+> = {0.8f};
 
 #define SHADOW_FILTER_TAPS_CNT 10
 float2 SuperFilterTaps[SHADOW_FILTER_TAPS_CNT] 
@@ -580,7 +636,6 @@ float4 frag(vOutput IN) : COLOR
 		float3 ambientColor = lerp(AmbientBottomColor, AmbientTopColor, saturate( dot(float3(0,1,0), worldNormal))); 
 
 		// DIFFUSE LIGHTING
-		
 		float3 diffuse = saturate(dot(lightDir, worldNormal)) * DiffuseColor;
 		float diffuseAlpha = 1.0f;
 
@@ -595,28 +650,35 @@ float4 frag(vOutput IN) : COLOR
 			}
 		}
 
+		// REFLECTION
+		float3 reflectionVec = -reflect(worldCameraDir, worldNormal);
+		float3 reflectionTex = pow(CubemapTexture.SampleLevel(SamplerCubemap, reflectionVec, reflectionBlur), reflectionContrast) * reflectionStrength;
+
 		// SPECULAR LIGHTING
 		float3 specular;
 		float3 fresnel = pow(1- saturate(dot(worldCameraDir, worldNormal)), FresnelPower) * FresnelColor;
 
 		if (blinnEnable) {
-			specular = ComputeBlinn(diffuse, lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+			specular = ComputeBlinn(diffuse, lightDir, worldNormal, worldCameraDir) * SpecularColor;
 		}
 		else {
-			specular = ComputePhong(lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+			specular = ComputePhong(lightDir, worldNormal, worldCameraDir) * SpecularColor;
 		}
 
 		if (UseSpecularTexture) {
 			float4 specularTex = SpecularTexture.Sample(SamplerSpecular, uv);
 			specular *= specularTex.r;
-			fresnel = pow(1- saturate(dot(normalize(IN.worldCameraDir), worldNormal)), FresnelPower) * FresnelColor * specularTex.b;
+			fresnel = pow(1- saturate(dot(worldCameraDir, worldNormal)), FresnelPower) * FresnelColor * specularTex.b;
+			reflectionTex *= specularTex.b;
 		}
+
+		float3 totalSpec = specular + fresnel + reflectionTex;
 		
 		// SHADOW
 		float shadow = 1.0f;
 		shadow = ComputeShadows(IN);
 
-		float3 totalLight = (ambientColor + diffuse + specular + fresnel) * light0Color * light0Intensity;
+		float3 totalLight = (ambientColor + diffuse + totalSpec) * light0Color * light0Intensity;
 
 		//Apply Opacity
 		totalLight *= Opacity;
