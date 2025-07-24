@@ -21,7 +21,7 @@ bool light0Enable : LIGHTENABLE
 <
 	string Object = "Light 0";	// UI Group for lights, auto-closed
 	string UIName = "Enable Light 0";
-	int UIOrder = 20;
+	int UIOrder = 0;
 > = false;	// maya manages lights itself and defaults to no lights
 
 int light0Type : LIGHTTYPE
@@ -32,7 +32,7 @@ int light0Type : LIGHTTYPE
 	float UIMin = 0;
 	float UIMax = 5;
 	float UIStep = 1;
-	int UIOrder = 21;
+	int UIOrder = 1;
 > = 4;	
 
 float3 light0Color : LIGHTCOLOR 
@@ -40,7 +40,7 @@ float3 light0Color : LIGHTCOLOR
 	string Object = "Light 0";
 	string UIName = "Light 0 Color"; 
 	string UIWidget = "Color"; 
-	int UIOrder = 23;
+	int UIOrder = 2;
 > = { 1.0f, 1.0f, 1.0f};
 
 float light0Intensity : LIGHTINTENSITY 
@@ -50,7 +50,7 @@ float light0Intensity : LIGHTINTENSITY
 	float UIMin = 0.0;
 	float UIMax = 10;
 	float UIStep = 0.01;
-	int UIOrder = 24;
+	int UIOrder = 3;
 > = { 1.0f };
 
 float3 light0Dir : DIRECTION 
@@ -58,7 +58,7 @@ float3 light0Dir : DIRECTION
 	string Object = "Light 0";
 	string UIName = "Light 0 Direction"; 
 	string Space = "World"; 
-	int UIOrder = 25;
+	int UIOrder = 4;
 	int RefID = 0; // 3DSMAX
 > = {100.0f, 100.0f, 100.0f}; 
 
@@ -68,21 +68,21 @@ float3 DiffuseColor : DIFFUSE <
     string UIGroup = "Diffuse";
     string UIName =  "Diffuse Color";
     string UIWidget = "Color";
-	int UIOrder = 0;
+	int UIOrder = 10;
 > = {1.0f,1.0f,1.0f};
 
 bool UseDiffuseTexture
 <
 	string UIGroup = "Diffuse";
 	string UIName = "Diffuse Map";
-	int UIOrder = 1;
+	int UIOrder = 11;
 > = false;
 
 bool UseDiffuseTextureAlpha
 <
 	string UIGroup = "Diffuse";
 	string UIName = "Diffuse Map Alpha";
-	int UIOrder = 2;
+	int UIOrder = 12;
 > = false;
 
 Texture2D DiffuseTexture
@@ -93,8 +93,8 @@ Texture2D DiffuseTexture
 	string UIName = "Diffuse Map";
 	string ResourceType = "2D";	
 	int mipmaplevels = NumberOfMipMaps;
-	int UIOrder = 201;
-	int UVEditorOrder = 1;
+	int UIOrder = 13;
+	// int UVEditorOrder = 1;
 >;
 
 SamplerState SamplerDiffuse
@@ -111,6 +111,7 @@ float TextureAlphaLimit
 	float UIMin = 0.0;
 	float UIMax = 1.0;
 	float UIStep = 0.00001;
+	int UIOrder = 14;
 	string UIName = "Texture Alpha Cutoff";
 > = 1.0;
 
@@ -120,7 +121,7 @@ bool blinnEnable
 <	
 	string UIGroup = "Specularity";
 	string UIName = "Enable Blinn";
-	int UIOrder = 10;
+	int UIOrder = 20;
 > = false;	// maya manages lights itself and defaults to no lights
 
 float3 SpecularColor : Specular
@@ -128,7 +129,7 @@ float3 SpecularColor : Specular
 	string UIGroup = "Specularity";
 	string UIName = "Specular Color";
 	string UIWidget = "ColorPicker";
-	int UIOrder = 11;
+	int UIOrder = 21;
 > = {1.0f, 1.0f, 1.0f };
 
 float SpecularPower
@@ -140,7 +141,7 @@ float SpecularPower
 	float UIMax = 128;
 	float UIStep = 0.01;
 	string UIName = "Specular Power";
-	int UIOrder = 12;
+	int UIOrder = 22;
 > = 20.0;
 
 float SpecularStrength
@@ -152,14 +153,14 @@ float SpecularStrength
 	float UIMax = 10;
 	float UIStep = 0.01;
 	string UIName = "Specular Strength";
-	int UIOrder = 13;
+	int UIOrder = 23;
 > = 1.0;
 
 bool UseSpecularTexture
 <
 	string UIGroup = "Specularity";
 	string UIName = "Specular Map";
-	int UIOrder = 14;
+	int UIOrder = 24;
 > = false;
 
 Texture2D SpecularTexture
@@ -182,13 +183,58 @@ SamplerState SamplerSpecular
 };
 
 //-------------------------------------------------------------------
+// NORMAL MAP
+bool UseNormalTexture
+<
+	string UIGroup = "Normal Map";
+	string UIName = "Normal Map";
+	int UIOrder = 20;
+> = false;
+
+bool SupportNonUniformScale
+<
+	string UIGroup = "Normal Map";
+	string UIName = "Support Non-Uniform Scale";
+	int UIOrder = 21;
+> = true;
+
+float normalMapStrength
+<
+	string UIGroup = "Normal Map";
+	string UIWidget = "Slider";
+	string UIName = "Normal Map Strength";
+	float UIMin = 0.000;
+	float UISoftMax = 10.000;
+	float UIStep = 0.001;
+	int UIOrder = 23;
+> = {0.01f};
+
+Texture2D NormalTexture
+<
+	string UIGroup = "Normal Map";
+	string ResourceName = "";
+	string UIWidget = "FilePicker";
+	string UIName = "Normal Map";
+	string ResourceType = "2D";
+	int mipmaplevels = 0;	// If mip maps exist in texture, Maya will load them. So user can pre-calculate and re-normalize mip maps for normal maps in .dds
+	int UIOrder = 22;
+	// int UVEditorOrder = 5;
+>;
+
+SamplerState SamplerNormal
+{
+	Filter = ANISOTROPIC;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+//-------------------------------------------------------------------
 // SHADOWS
 
 Texture2D light0ShadowMap : SHADOWMAP
 <
 	string Object = "Light 0";	// UI Group for lights, auto-closed
 	string UIWidget = "None";
-	int UIOrder = 5010;
+	int UIOrder = 30;
 >;
 
 float4x4 light0Matrix : SHADOWMAPMATRIX		
@@ -205,7 +251,7 @@ float shadowDepthBias : ShadowMapBias
 		float UISoftMax = 10.000;
 		float UIStep = 0.001;
 		string UIName = "Shadow Bias";
-		int UIOrder = 13;
+		int UIOrder = 31;
 > = {0.01f};
 
 float shadowMultiplier
@@ -216,7 +262,7 @@ float shadowMultiplier
 		float UIMax = 1.000;
 		float UIStep = 0.001;
 		string UIName = "Shadow Strength";
-		int UIOrder = 12;
+		int UIOrder = 32;
 > = {1.0f};
 
 #define SHADOW_FILTER_TAPS_CNT 10
@@ -261,6 +307,7 @@ float Opacity : OPACITY
 	float UIMax = 1.0;
 	float UIStep = 0.001;
 	string UIName = "Opacity";
+	int UIOrder = 100;
 > = 1.0;
 
 struct appdata
@@ -268,6 +315,8 @@ struct appdata
 	float4 position	: POSITION;
 	float2 texcoord : TEXCOORD0;
 	float3 normal	: NORMAL;
+	float3 binormal : BINORMAL;
+	float3 tangent : TANGENT;
 };
 
 struct vOutput
@@ -275,8 +324,9 @@ struct vOutput
 	float4 position	: POSITION;
 	float2 texcoord : TEXCOORD0;
 	float3 worldPos : TEXCOORD1;
-	float3 worldNormal	: TEXCOORD2;
-	float3 worldCameraDir	: TEXCOORD5;
+	float3 worldNormal	: NORMAL;
+	float4 worldTangent : TANGENT;
+	float3 worldCameraDir : TEXCOORD5;
 };
 
 vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x4 World,
@@ -285,8 +335,25 @@ vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x
 	vOutput Output;
     //Compute MVP vertex position
     float4 pos = mul(IN.position, WorldViewProjection);
-    //Compute World Space normal
-    float3 worldNormal = mul(float4(IN.normal,0.0f),WorldInverseTranspose).xyz;
+
+	//Compute World Space normal
+	float3 worldNormal;
+	if (!SupportNonUniformScale)
+    	worldNormal = mul(float4(IN.normal,0.0f), World).xyz;
+	else 
+		worldNormal = mul(float4(IN.normal,0.0f), WorldInverseTranspose).xyz;
+	
+	//Compute World Space tangent
+	float4 worldTangent;
+	if (!SupportNonUniformScale)
+		worldTangent.xyz = mul(float4(IN.tangent, 0.0f), World).xyz;
+	else 
+		worldTangent = mul(float4(IN.tangent, 0.0f), WorldInverseTranspose);
+
+	worldTangent.w = 1.0f;
+	if (dot(cross(IN.normal.xyz, IN.tangent.xyz), IN.binormal.xyz) < 0.0) worldTangent.w = -1;
+		
+	
 	//Compute World Space vertex position
 	float4 worldPos = mul(float4(IN.position.xyz, 1.0f),World);	// convert to "world" space
 	//Compute World Space camera position
@@ -298,6 +365,7 @@ vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x
 	Output.worldPos = worldPos;
     Output.position = pos;
     Output.worldNormal = worldNormal;
+	Output.worldTangent = worldTangent;
 	Output.texcoord = float2(IN.texcoord.x, 1.0f - IN.texcoord.y);
 
 	return Output;
@@ -359,6 +427,23 @@ float4 frag(vOutput IN) : COLOR
 	float3 worldNormal = normalize(IN.worldNormal);
 	float3 lightDir = normalize(-light0Dir);
 
+	float2 uv = IN.texcoord;
+
+	// NORMAL MAP
+	if (UseNormalTexture) {
+		
+		float3 Tangent = normalize(IN.worldTangent.xyz);
+		float3 Binormal = cross(worldNormal, Tangent);
+		Binormal *= IN.worldTangent.w;
+		float3x3 toWorld = float3x3(Tangent, Binormal, worldNormal);
+
+		float3 NormalMap = NormalTexture.Sample(SamplerNormal, uv).xyz * 2 - 1;
+		NormalMap.xy *= normalMapStrength;
+		NormalMap = mul(NormalMap.xyz, toWorld);
+
+		worldNormal = normalize(NormalMap.rgb);
+	}
+
 	if(light0Enable )
 	{
 		// DIFFUSE LIGHTING
@@ -367,7 +452,7 @@ float4 frag(vOutput IN) : COLOR
 		float diffuseAlpha = 1.0f;
 
 		if (UseDiffuseTexture) {
-			float4 diffuseTex = DiffuseTexture.Sample(SamplerDiffuse, IN.texcoord);
+			float4 diffuseTex = DiffuseTexture.Sample(SamplerDiffuse, uv);
 			diffuse *= DiffuseColor * diffuseTex;
 
 			if (UseDiffuseTextureAlpha) {
@@ -376,7 +461,6 @@ float4 frag(vOutput IN) : COLOR
 				clip(diffuseAlpha - TextureAlphaLimit);
 			}
 		}
-
 
 		// SPECULAR LIGHTING
 		float3 specular;
@@ -388,15 +472,18 @@ float4 frag(vOutput IN) : COLOR
 		}
 
 		if (UseSpecularTexture) {
-			float4 specularTex = SpecularTexture.Sample(SamplerSpecular, IN.texcoord);
+			float4 specularTex = SpecularTexture.Sample(SamplerSpecular, uv);
 			specular *= specularTex.r;
 		}
-		
-		float3 totalLight = (diffuse + specular) * light0Color * light0Intensity * Opacity;
 
+		
 		float shadow = 1.0f;
 		shadow = ComputeShadows(IN);
-		totalLight *= shadow;
+		
+		float3 totalLight = (diffuse * shadow + specular * shadow) * light0Color * light0Intensity * Opacity;
+
+		
+		// totalLight *= shadow;
 
 		
 		outColor.rgb = totalLight;
