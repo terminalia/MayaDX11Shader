@@ -490,7 +490,7 @@ float4 frag(vOutput IN) : COLOR
 		// SPECULAR LIGHTING
 		float3 specular;
 		float3 fresnel = pow(1- saturate(dot(normalize(IN.worldCameraDir), worldNormal)), FresnelPower) * FresnelColor;
-		
+
 		if (blinnEnable) {
 			specular = ComputeBlinn(diffuse, lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
 		}
@@ -503,18 +503,14 @@ float4 frag(vOutput IN) : COLOR
 			specular *= specularTex.r;
 			fresnel = pow(1- saturate(dot(normalize(IN.worldCameraDir), worldNormal)), FresnelPower) * FresnelColor * specularTex.b;
 		}
-
-		// FRESNEL (RIM)
-		
-
 		
 		float shadow = 1.0f;
 		shadow = ComputeShadows(IN);
 
-		float3 totalLight = (diffuse * shadow + specular * shadow + fresnel) * light0Color * light0Intensity * Opacity;
+		float3 totalLight = (diffuse + specular + fresnel) * light0Color * light0Intensity * Opacity;
 
 		
-		// totalLight *= shadow;
+		totalLight *= shadow;
 
 		
 		outColor.rgb = totalLight;
