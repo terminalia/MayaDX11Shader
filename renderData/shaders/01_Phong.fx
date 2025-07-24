@@ -339,7 +339,7 @@ float reflectionStrength
 	string UIWidget = "Slider";
 	string UIName = "Reflection Strength";
 	float UIMin = 0.000;
-	float UISoftMax = 1.000;
+	float UISoftMax = 10.000;
 	float UIStep = 0.001;
 	int UIOrder = 41;
 > = {0.0f};
