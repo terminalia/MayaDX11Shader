@@ -82,6 +82,23 @@ float3 light0Dir : DIRECTION
 > = {100.0f, 100.0f, 100.0f}; 
 
 //-------------------------------------------------------------------
+// AMBIENT
+
+float3 AmbientTopColor <
+    string UIGroup = "Ambient Light";
+    string UIName =  "Ambient Top Color";
+    string UIWidget = "Color";
+	int UIOrder = 0;
+> = {0.0f,0.0f,0.0f};
+
+float3 AmbientBottomColor <
+    string UIGroup = "Ambient Light";
+    string UIName =  "Ambient Bottom Color";
+    string UIWidget = "Color";
+	int UIOrder = 0;
+> = {0.0f,0.0f,0.0f};
+
+//-------------------------------------------------------------------
 // DIFFUSE
 
 float3 DiffuseColor : DIFFUSE <
@@ -343,7 +360,7 @@ float2 uvSpeedXY
 <
 	string UIGroup = "UV Manipulation";
 	string UIName = "UV Animation Speed";
-	int UIOrder = 0;
+	int UIOrder = 60;
 > = {0.0f, 0.0f};
 
 float uvTileX 
@@ -353,7 +370,7 @@ float uvTileX
 	string UIName = "UV Tile X";
     float UIMin = 1;
 	float UIMax = 10;
-	int UIOrder = 1;
+	int UIOrder = 61;
 > = 1.0f;
 
 float uvTileY
@@ -363,7 +380,7 @@ float uvTileY
 	string UIName = "UV Tile Y";
     float UIMin = 1;
 	float UIMax = 10;
-	int UIOrder = 1;
+	int UIOrder = 62;
 > = 1.0f;
 
 float uvOffsetX
@@ -373,7 +390,7 @@ float uvOffsetX
 	string UIName = "UV Offset X";
     float UIMin = 0;
 	float UIMax = 10;
-	int UIOrder = 2;
+	int UIOrder = 63;
 > = 0.0f;
 
 float uvOffsetY
@@ -383,7 +400,7 @@ float uvOffsetY
 	string UIName = "UV Offset Y";
     float UIMin = 0;
 	float UIMax = 10;
-	int UIOrder = 3;
+	int UIOrder = 64;
 > = 0.0f;
 
 //-------------------------------------------------------------------
@@ -559,6 +576,9 @@ float4 frag(vOutput IN) : COLOR
 
 	if(light0Enable )
 	{
+		// AMBIENT LIGHTING
+		float3 ambientColor = lerp(AmbientBottomColor, AmbientTopColor, saturate( dot(float3(0,1,0), worldNormal))); 
+
 		// DIFFUSE LIGHTING
 		
 		float3 diffuse = saturate(dot(lightDir, worldNormal)) * DiffuseColor;
@@ -596,7 +616,7 @@ float4 frag(vOutput IN) : COLOR
 		float shadow = 1.0f;
 		shadow = ComputeShadows(IN);
 
-		float3 totalLight = (diffuse + specular + fresnel) * light0Color * light0Intensity;
+		float3 totalLight = (ambientColor + diffuse + specular + fresnel) * light0Color * light0Intensity;
 
 		//Apply Opacity
 		totalLight *= Opacity;
