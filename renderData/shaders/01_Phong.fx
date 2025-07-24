@@ -10,59 +10,101 @@ float4x4 WorldInverseTranspose : WorldInverseTranspose;
 float4x4 WorldViewProjection : WorldViewProjection;
 float4x4 ViewInverse : ViewInverse;
 
-cbuffer UpdateLights : register(b2)
-{
-	bool light0Enable : LIGHTENABLE
-	<
-		string Object = "Light 0";	// UI Group for lights, auto-closed
-		string UIName = "Enable Light 0";
-		int UIOrder = 20;
-	> = false;	// maya manages lights itself and defaults to no lights
+//	LIGHTS
+bool light0Enable : LIGHTENABLE
+<
+	string Object = "Light 0";	// UI Group for lights, auto-closed
+	string UIName = "Enable Light 0";
+	int UIOrder = 20;
+> = false;	// maya manages lights itself and defaults to no lights
 
-	int light0Type : LIGHTTYPE
-	<
-		string Object = "Light 0";
-		string UIName = "Light 0 Type";
-		string UIFieldNames ="None:Default:Spot:Point:Directional:Ambient";
-		int UIOrder = 21;
-		float UIMin = 0;
-		float UIMax = 5;
-		float UIStep = 1;
-	> = 4;	
+int light0Type : LIGHTTYPE
+<
+	string Object = "Light 0";
+	string UIName = "Light 0 Type";
+	string UIFieldNames ="None:Default:Spot:Point:Directional:Ambient";
+	float UIMin = 0;
+	float UIMax = 5;
+	float UIStep = 1;
+	int UIOrder = 21;
+> = 4;	
 
-	float3 light0Color : LIGHTCOLOR 
-	<
-		string Object = "Light 0";
-		string UIName = "Light 0 Color"; 
-		string UIWidget = "Color"; 
-		int UIOrder = 23;
-	> = { 1.0f, 1.0f, 1.0f};
+float3 light0Color : LIGHTCOLOR 
+<
+	string Object = "Light 0";
+	string UIName = "Light 0 Color"; 
+	string UIWidget = "Color"; 
+	int UIOrder = 23;
+> = { 1.0f, 1.0f, 1.0f};
 
-	float light0Intensity : LIGHTINTENSITY 
-	<
-		string Object = "Light 0";
-		string UIName = "Light 0 Intensity"; 
-		float UIMin = 0.0;
-		float UIMax = 10;
-		float UIStep = 0.01;
-			int UIOrder = 24;
-	> = { 1.0f };
+float light0Intensity : LIGHTINTENSITY 
+<
+	string Object = "Light 0";
+	string UIName = "Light 0 Intensity"; 
+	float UIMin = 0.0;
+	float UIMax = 10;
+	float UIStep = 0.01;
+	int UIOrder = 24;
+> = { 1.0f };
 
-	float3 light0Dir : DIRECTION 
-	< 
-		string Object = "Light 0";
-		string UIName = "Light 0 Direction"; 
-		string Space = "World"; 
-		int UIOrder = 25;
-		int RefID = 0; // 3DSMAX
-	> = {100.0f, 100.0f, 100.0f}; 
-}
+float3 light0Dir : DIRECTION 
+< 
+	string Object = "Light 0";
+	string UIName = "Light 0 Direction"; 
+	string Space = "World"; 
+	int UIOrder = 25;
+	int RefID = 0; // 3DSMAX
+> = {100.0f, 100.0f, 100.0f}; 
+
+// DIFFUSE
 
 float3 gDiffuseColor : DIFFUSE <
     string UIGroup = "Diffuse";
     string UIName =  "Diffuse Color";
     string UIWidget = "Color";
+	int UIOrder = 0;
 > = {1.0f,1.0f,1.0f};
+
+// SPECULARITY
+
+bool blinnEnable
+<	
+	string UIGroup = "Specularity";
+	string UIName = "Enable Blinn";
+	int UIOrder = 10;
+> = false;	// maya manages lights itself and defaults to no lights
+
+float3 SpecularColor : Specular
+<
+	string UIGroup = "Specularity";
+	string UIName = "Specular Color";
+	string UIWidget = "ColorPicker";
+	int UIOrder = 11;
+> = {1.0f, 1.0f, 1.0f };
+
+float SpecularPower
+<
+	string UIGroup = "Specularity";
+	string UIWidget = "Slider";
+	float UIMin = 0.0;	// 0 for anisotropic
+	// float UISoftMax = 100.0;
+	float UIMax = 128;
+	float UIStep = 0.01;
+	string UIName = "Specular Power";
+	int UIOrder = 12;
+> = 20.0;
+
+float SpecularStrength
+<
+	string UIGroup = "Specularity";
+	string UIWidget = "Slider";
+	float UIMin = 0.0;	// 0 for anisotropic
+	// float UISoftMax = 100.0;
+	float UIMax = 10;
+	float UIStep = 0.01;
+	string UIName = "Specular Strength";
+	int UIOrder = 13;
+> = 1.0;
 
 //-------------------------------------------------------------------
 // SHADOWS
@@ -155,7 +197,7 @@ struct vOutput
 	float2 texcoord : TEXCOORD0;
 	float3 worldPos : TEXCOORD1;
 	float3 worldNormal	: TEXCOORD2;
-	float3 WorldView	: TEXCOORD5;
+	float3 worldCameraDir	: TEXCOORD5;
 };
 
 vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x4 World,
@@ -168,14 +210,35 @@ vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x
     float3 worldNormal = mul(float4(IN.normal,0.0f),WorldInverseTranspose).xyz;
 	//Compute World Space vertex position
 	float4 worldPos = mul(float4(IN.position.xyz, 1.0f),World);	// convert to "world" space
-	Output.WorldView = normalize(ViewInverse[3].xyz - worldPos.xyz);
+	//Compute World Space camera position
+	float3 worldCameraPos = ViewInverse[3].xyz;
+	//Computee World Space camera direction
+	float3 worldCameraDir = worldCameraPos - worldPos;
 	
+	Output.worldCameraDir = worldCameraDir;
 	Output.worldPos = worldPos;
     Output.position = pos;
     Output.worldNormal = worldNormal;
 	Output.texcoord = IN.texcoord;
 
 	return Output;
+}
+
+float ComputePhong(float3 lightDir, float3 worldNormal, float3 worldCameraDir)
+{
+	float specular = SpecularStrength * pow(saturate(dot(reflect(-lightDir, worldNormal), worldCameraDir)), SpecularPower);
+
+	return specular;
+}
+
+float ComputeBlinn(float diffuse, float3 lightDir, float3 worldNormal, float3 worldCameraDir)
+{
+	float3 halfwayDir = normalize(worldCameraDir + lightDir);
+	float specular = dot(halfwayDir, worldNormal);
+	float4 litV = lit(diffuse, specular, SpecularPower);
+	specular = SpecularStrength * diffuse * litV.z;
+
+	return specular;
 }
 
 float ComputeShadows(vOutput IN)
@@ -217,7 +280,18 @@ float4 frag(vOutput IN) : COLOR
 	float3 worldNormal = normalize(IN.worldNormal);
 	float3 lightDir = normalize(-light0Dir);
 
+	// DIFFUSE LIGHTING
 	float3 diffuse = saturate(dot(lightDir, worldNormal));
+	
+	// SPECULAR LIGHTING
+	float3 specular;
+	if (blinnEnable) {
+		specular = ComputeBlinn(diffuse, lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+	}
+	else {
+		specular = ComputePhong(lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+	}
+	diffuse += specular;
 
 	if(light0Enable )
 	{
