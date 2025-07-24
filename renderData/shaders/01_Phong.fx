@@ -151,6 +151,31 @@ float TextureAlphaLimit
 	string UIName = "Texture Alpha Cutoff";
 > = 1.0;
 
+bool subsurfaceEnable
+<
+	string UIGroup = "Diffuse";
+	string UIName = "Enable Subsurface";
+	int UIOrder = 15;
+> = false;	
+
+float3 SubsurfaceColor <
+    string UIGroup = "Diffuse";
+    string UIName =  "Subsurface Color";
+    string UIWidget = "Color";
+	int UIOrder = 16;
+> = {1.0f,0.0f,0.0f};
+
+float subsurfaceSpread
+<
+	string UIGroup = "Diffuse";
+	string UIWidget = "Slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.00001;
+	int UIOrder = 17;
+	string UIName = "Subsurface Spread";
+> = 0.0;
+
 //-------------------------------------------------------------------
 // SPECULARITY
 
@@ -639,6 +664,11 @@ float4 frag(vOutput IN) : COLOR
 		float3 diffuse = saturate(dot(lightDir, worldNormal)) * DiffuseColor;
 		float diffuseAlpha = 1.0f;
 
+		//Subsurface
+		if (subsurfaceEnable) {
+			diffuse = saturate((dot(lightDir, worldNormal) * (1 - subsurfaceSpread) + subsurfaceSpread) + SubsurfaceColor) * DiffuseColor;
+		}
+
 		if (UseDiffuseTexture) {
 			float4 diffuseTex = DiffuseTexture.Sample(SamplerDiffuse, uv);
 			diffuse *= diffuseTex;
@@ -649,6 +679,9 @@ float4 frag(vOutput IN) : COLOR
 				clip(diffuseAlpha - TextureAlphaLimit);
 			}
 		}
+
+		//Subsurface
+		
 
 		// REFLECTION
 		float3 reflectionVec = -reflect(worldCameraDir, worldNormal);
