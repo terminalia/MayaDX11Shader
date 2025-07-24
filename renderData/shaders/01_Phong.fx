@@ -5,6 +5,12 @@
 #define LIGHT_COORDS "World"
 // #define OBJECT_SPACE_LIGHTS /* Define if LIGHT_COORDS is "Object" */
 
+// how many mip map levels should Maya generate or load per texture. 
+// 0 means all possible levels
+// some textures may override this value, but most textures will follow whatever we have defined here
+// If you wish to optimize performance (at the cost of reduced quality), you can set NumberOfMipMaps below to 1
+#define NumberOfMipMaps 0
+
 float4x4 World : World;
 float4x4 WorldInverseTranspose : WorldInverseTranspose;
 float4x4 WorldViewProjection : WorldViewProjection;
@@ -58,12 +64,55 @@ float3 light0Dir : DIRECTION
 
 // DIFFUSE
 
-float3 gDiffuseColor : DIFFUSE <
+float3 DiffuseColor : DIFFUSE <
     string UIGroup = "Diffuse";
     string UIName =  "Diffuse Color";
     string UIWidget = "Color";
 	int UIOrder = 0;
 > = {1.0f,1.0f,1.0f};
+
+bool UseDiffuseTexture
+<
+	string UIGroup = "Diffuse";
+	string UIName = "Diffuse Map";
+	int UIOrder = 1;
+> = false;
+
+bool UseDiffuseTextureAlpha
+<
+	string UIGroup = "Diffuse";
+	string UIName = "Diffuse Map Alpha";
+	int UIOrder = 2;
+> = false;
+
+Texture2D DiffuseTexture
+<
+	string UIGroup = "Diffuse";
+	string ResourceName = "";
+	string UIWidget = "FilePicker";
+	string UIName = "Diffuse Map";
+	string ResourceType = "2D";	
+	int mipmaplevels = NumberOfMipMaps;
+	int UIOrder = 201;
+	int UVEditorOrder = 1;
+>;
+
+SamplerState SamplerDiffuse
+{
+	Filter = ANISOTROPIC;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
+float TextureAlphaLimit
+<
+	string UIGroup = "Diffuse";
+	string UIWidget = "Slider";
+	float UIMin = 0.0;
+	float UIMax = 1.0;
+	float UIStep = 0.00001;
+	string UIName = "Texture Alpha Cutoff";
+> = 1.0;
 
 // SPECULARITY
 
@@ -108,6 +157,7 @@ float SpecularStrength
 
 //-------------------------------------------------------------------
 // SHADOWS
+
 Texture2D light0ShadowMap : SHADOWMAP
 <
 	string Object = "Light 0";	// UI Group for lights, auto-closed
@@ -174,6 +224,9 @@ SamplerState SamplerShadowDepth
 	BorderColor = float4(1.0f, 1.0f, 1.0f, 1.0f);
 };
 
+//-------------------------------------------------------------------
+// TRANSPARENCY
+
 float Opacity : OPACITY
 <
 	string UIGroup = "Opacity";
@@ -219,7 +272,7 @@ vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x
 	Output.worldPos = worldPos;
     Output.position = pos;
     Output.worldNormal = worldNormal;
-	Output.texcoord = IN.texcoord;
+	Output.texcoord = float2(IN.texcoord.x, 1.0f - IN.texcoord.y);
 
 	return Output;
 }
@@ -280,25 +333,45 @@ float4 frag(vOutput IN) : COLOR
 	float3 worldNormal = normalize(IN.worldNormal);
 	float3 lightDir = normalize(-light0Dir);
 
-	// DIFFUSE LIGHTING
-	float3 diffuse = saturate(dot(lightDir, worldNormal));
-	
-	// SPECULAR LIGHTING
-	float3 specular;
-	if (blinnEnable) {
-		specular = ComputeBlinn(diffuse, lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
-	}
-	else {
-		specular = ComputePhong(lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
-	}
-	diffuse += specular;
-
 	if(light0Enable )
 	{
+		// DIFFUSE LIGHTING
+		
+		float3 diffuse = saturate(dot(lightDir, worldNormal));
+		float diffuseAlpha = 1.0f;
+
+		if (UseDiffuseTexture) {
+			float4 diffuseTex = DiffuseTexture.Sample(SamplerDiffuse, IN.texcoord);
+			diffuse *= DiffuseColor * diffuseTex;
+
+			if (UseDiffuseTextureAlpha) {
+				diffuseAlpha = diffuseTex.a;
+				//Apply Texture Alpha Cut Off
+				clip(diffuseAlpha - TextureAlphaLimit);
+			}
+		}
+
+
+		// SPECULAR LIGHTING
+		float3 specular;
+		if (blinnEnable) {
+			specular = ComputeBlinn(diffuse, lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+		}
+		else {
+			specular = ComputePhong(lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+		}
+		
+		float3 totalLight = (diffuse + specular) * light0Color * light0Intensity * Opacity;
+
 		float shadow = 1.0f;
 		shadow = ComputeShadows(IN);
-		diffuse *= shadow;
-		outColor.rgb = (diffuse) * gDiffuseColor * light0Color * light0Intensity  * Opacity;
+		totalLight *= shadow;
+
+		
+		outColor.rgb = totalLight;
+		
+		
+		//outColor.rgb = diffuse * light0Color * light0Intensity  * saturate(diffuseAlpha * Opacity);
 		outColor.a = Opacity;
 	}
 
