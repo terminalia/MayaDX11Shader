@@ -11,10 +11,22 @@
 // If you wish to optimize performance (at the cost of reduced quality), you can set NumberOfMipMaps below to 1
 #define NumberOfMipMaps 0
 
+//###################################################################
+// MATRICES
+//
+// Matrices coming from application (Maya)
+//###################################################################
+
 float4x4 World : World;
 float4x4 WorldInverseTranspose : WorldInverseTranspose;
 float4x4 WorldViewProjection : WorldViewProjection;
 float4x4 ViewInverse : ViewInverse;
+
+//###################################################################
+// PARAMETERS
+//
+// 
+//###################################################################
 
 //Animation time
 float time : Time
@@ -22,11 +34,10 @@ float time : Time
 	string UIWidget = "None";
 >;
 
-
-//	LIGHTS
+//-------------------------------------------------------------------
+// DIRECTINAL LIGHT0
 bool light0Enable : LIGHTENABLE
 <
-	string UIGroup = "Lighting";
 	string Object = "Light 0";	// UI Group for lights, auto-closed
 	string UIName = "Enable Light 0";
 	int UIOrder = 0;
@@ -70,6 +81,7 @@ float3 light0Dir : DIRECTION
 	int RefID = 0; // 3DSMAX
 > = {100.0f, 100.0f, 100.0f}; 
 
+//-------------------------------------------------------------------
 // DIFFUSE
 
 float3 DiffuseColor : DIFFUSE <
@@ -102,7 +114,6 @@ Texture2D DiffuseTexture
 	string ResourceType = "2D";	
 	int mipmaplevels = NumberOfMipMaps;
 	int UIOrder = 13;
-	// int UVEditorOrder = 1;
 >;
 
 SamplerState SamplerDiffuse
@@ -123,45 +134,49 @@ float TextureAlphaLimit
 	string UIName = "Texture Alpha Cutoff";
 > = 1.0;
 
-// FRESNEL (RIM LIGHT)
-
-float3 FresnelColor
-<
-	string UIGroup = "Diffuse";
-	string UIName = "Fresnel Color";
-	string UIWidget = "ColorPicker";
-	int UIOrder = 15;
-> = {1.0f, 1.0f, 1.0f };
-
-float FresnelPower
-<
-	string UIGroup = "Diffuse";
-	string UIName = "Fresnel Power"; 
-	float UIMin = 0.0;
-	float UIMax = 20;
-	float UIStep = 0.01;
-	int UIOrder = 16;
-> = { 1.0f };
-
-
-
-
+//-------------------------------------------------------------------
 // SPECULARITY
-
-bool blinnEnable
-<	
-	string UIGroup = "Specularity";
-	string UIName = "Enable Blinn";
-	int UIOrder = 20;
-> = false;	// maya manages lights itself and defaults to no lights
 
 float3 SpecularColor : Specular
 <
 	string UIGroup = "Specularity";
 	string UIName = "Specular Color";
 	string UIWidget = "ColorPicker";
-	int UIOrder = 21;
+	int UIOrder = 20;
 > = {1.0f, 1.0f, 1.0f };
+
+bool blinnEnable
+<	
+	string UIGroup = "Specularity";
+	string UIName = "Enable Blinn";
+	int UIOrder = 21;
+> = false;	// maya manages lights itself and defaults to no lights
+
+bool UseSpecularTexture
+<
+	string UIGroup = "Specularity";
+	string UIName = "Specular Map";
+	int UIOrder = 22;
+> = false;
+
+Texture2D SpecularTexture
+<
+	string UIGroup = "Specularity";
+	string ResourceName = "";
+	string UIWidget = "FilePicker";
+	string UIName = "Specular Map";
+	string ResourceType = "2D";
+	int mipmaplevels = NumberOfMipMaps;
+	int UIOrder = 23;
+	int UVEditorOrder = 4;
+>;
+
+SamplerState SamplerSpecular
+{
+	Filter = ANISOTROPIC;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
 
 float SpecularPower
 <
@@ -172,7 +187,7 @@ float SpecularPower
 	float UIMax = 128;
 	float UIStep = 0.01;
 	string UIName = "Specular Power";
-	int UIOrder = 22;
+	int UIOrder = 24;
 > = 20.0;
 
 float SpecularStrength
@@ -184,34 +199,28 @@ float SpecularStrength
 	float UIMax = 10;
 	float UIStep = 0.01;
 	string UIName = "Specular Strength";
-	int UIOrder = 23;
+	int UIOrder = 25;
 > = 1.0;
 
-bool UseSpecularTexture
+// FRESNEL (RIM LIGHT)
+
+float3 FresnelColor
 <
 	string UIGroup = "Specularity";
-	string UIName = "Specular Map";
-	int UIOrder = 24;
-> = false;
+	string UIName = "Fresnel Color";
+	string UIWidget = "ColorPicker";
+	int UIOrder = 26;
+> = {0.0f, 0.0f, 0.0f };
 
-Texture2D SpecularTexture
+float FresnelPower
 <
 	string UIGroup = "Specularity";
-	string ResourceName = "";
-	string UIWidget = "FilePicker";
-	string UIName = "Specular Map";
-	string ResourceType = "2D";
-	int mipmaplevels = NumberOfMipMaps;
-	int UIOrder = 15;
-	int UVEditorOrder = 4;
->;
-
-SamplerState SamplerSpecular
-{
-	Filter = ANISOTROPIC;
-	AddressU = Wrap;
-	AddressV = Wrap;
-};
+	string UIName = "Fresnel Power"; 
+	float UIMin = 0.0;
+	float UIMax = 20;
+	float UIStep = 0.01;
+	int UIOrder = 27;
+> = { 10.0f };
 
 //-------------------------------------------------------------------
 // NORMAL MAP
@@ -219,26 +228,15 @@ bool UseNormalTexture
 <
 	string UIGroup = "Normal Map";
 	string UIName = "Normal Map";
-	int UIOrder = 20;
+	int UIOrder = 30;
 > = false;
 
 bool SupportNonUniformScale
 <
 	string UIGroup = "Normal Map";
 	string UIName = "Support Non-Uniform Scale";
-	int UIOrder = 21;
+	int UIOrder = 31;
 > = true;
-
-float normalMapStrength
-<
-	string UIGroup = "Normal Map";
-	string UIWidget = "Slider";
-	string UIName = "Normal Map Strength";
-	float UIMin = 0.000;
-	float UISoftMax = 10.000;
-	float UIStep = 0.001;
-	int UIOrder = 23;
-> = {0.01f};
 
 Texture2D NormalTexture
 <
@@ -248,7 +246,7 @@ Texture2D NormalTexture
 	string UIName = "Normal Map";
 	string ResourceType = "2D";
 	int mipmaplevels = 0;	// If mip maps exist in texture, Maya will load them. So user can pre-calculate and re-normalize mip maps for normal maps in .dds
-	int UIOrder = 22;
+	int UIOrder = 32;
 	// int UVEditorOrder = 5;
 >;
 
@@ -259,6 +257,17 @@ SamplerState SamplerNormal
 	AddressV = Wrap;
 };
 
+float normalMapStrength
+<
+	string UIGroup = "Normal Map";
+	string UIWidget = "Slider";
+	string UIName = "Normal Map Strength";
+	float UIMin = 0.000;
+	float UISoftMax = 10.000;
+	float UIStep = 0.001;
+	int UIOrder = 33;
+> = {0.5f};
+
 //-------------------------------------------------------------------
 // SHADOWS
 
@@ -266,7 +275,6 @@ Texture2D light0ShadowMap : SHADOWMAP
 <
 	string Object = "Light 0";	// UI Group for lights, auto-closed
 	string UIWidget = "None";
-	int UIOrder = 30;
 >;
 
 float4x4 light0Matrix : SHADOWMAPMATRIX		
@@ -283,7 +291,7 @@ float shadowDepthBias : ShadowMapBias
 		float UISoftMax = 10.000;
 		float UIStep = 0.001;
 		string UIName = "Shadow Bias";
-		int UIOrder = 31;
+		int UIOrder = 30;
 > = {0.01f};
 
 float shadowMultiplier
@@ -294,7 +302,7 @@ float shadowMultiplier
 		float UIMax = 1.000;
 		float UIStep = 0.001;
 		string UIName = "Shadow Strength";
-		int UIOrder = 32;
+		int UIOrder = 31;
 > = {1.0f};
 
 #define SHADOW_FILTER_TAPS_CNT 10
@@ -392,6 +400,12 @@ float Opacity : OPACITY
 	int UIOrder = 100;
 > = 1.0;
 
+//###################################################################
+// INPUT/OUTPUT STRUCTS
+//
+// 
+//###################################################################
+
 struct appdata
 {
 	float4 position	: POSITION;
@@ -410,6 +424,12 @@ struct vOutput
 	float4 worldTangent : TANGENT;
 	float3 worldCameraDir : TEXCOORD5;
 };
+
+//###################################################################
+// VERTEX SHADER
+//
+// 
+//###################################################################
 
 vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x4 World,
 	uniform float4x4 ViewInverse, uniform float4x4 WorldViewProjection, uniform float3 LightDir)
@@ -452,6 +472,10 @@ vOutput vert(appdata IN, uniform float4x4 WorldInverseTranspose, uniform float4x
 
 	return Output;
 }
+
+//###################################################################
+// FRAGMENT UTILS
+//###################################################################
 
 float ComputePhong(float3 lightDir, float3 worldNormal, float3 worldCameraDir)
 {
@@ -503,10 +527,17 @@ float ComputeShadows(vOutput IN)
 	return shadow;
 }
 
+//###################################################################
+// FRAGMENT SHADER
+//
+// 
+//###################################################################
+
 float4 frag(vOutput IN) : COLOR
 {
 	float4 outColor = float4(0, 0, 0, 1);
 	float3 worldNormal = normalize(IN.worldNormal);
+	float3 worldCameraDir = normalize(IN.worldCameraDir);
 	float3 lightDir = normalize(-light0Dir);
 
 	float2 uv = IN.texcoord * float2(uvTileX, uvTileY) + float2(uvOffsetX * 0.1, uvOffsetY * 0.1) + (time * uvSpeedXY);
@@ -530,12 +561,12 @@ float4 frag(vOutput IN) : COLOR
 	{
 		// DIFFUSE LIGHTING
 		
-		float3 diffuse = saturate(dot(lightDir, worldNormal));
+		float3 diffuse = saturate(dot(lightDir, worldNormal)) * DiffuseColor;
 		float diffuseAlpha = 1.0f;
 
 		if (UseDiffuseTexture) {
 			float4 diffuseTex = DiffuseTexture.Sample(SamplerDiffuse, uv);
-			diffuse *= DiffuseColor * diffuseTex;
+			diffuse *= diffuseTex;
 
 			if (UseDiffuseTextureAlpha) {
 				diffuseAlpha = diffuseTex.a;
@@ -546,7 +577,7 @@ float4 frag(vOutput IN) : COLOR
 
 		// SPECULAR LIGHTING
 		float3 specular;
-		float3 fresnel = pow(1- saturate(dot(normalize(IN.worldCameraDir), worldNormal)), FresnelPower) * FresnelColor;
+		float3 fresnel = pow(1- saturate(dot(worldCameraDir, worldNormal)), FresnelPower) * FresnelColor;
 
 		if (blinnEnable) {
 			specular = ComputeBlinn(diffuse, lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
@@ -561,24 +592,29 @@ float4 frag(vOutput IN) : COLOR
 			fresnel = pow(1- saturate(dot(normalize(IN.worldCameraDir), worldNormal)), FresnelPower) * FresnelColor * specularTex.b;
 		}
 		
+		// SHADOW
 		float shadow = 1.0f;
 		shadow = ComputeShadows(IN);
 
-		float3 totalLight = (diffuse + specular + fresnel) * light0Color * light0Intensity * Opacity;
+		float3 totalLight = (diffuse + specular + fresnel) * light0Color * light0Intensity;
 
-		
+		//Apply Opacity
+		totalLight *= Opacity;
+		//Apply Shadows
 		totalLight *= shadow;
-
 		
 		outColor.rgb = totalLight;
-		
-		
-		//outColor.rgb = diffuse * light0Color * light0Intensity  * saturate(diffuseAlpha * Opacity);
 		outColor.a = Opacity;
 	}
 
 	return outColor;
 }
+
+//###################################################################
+// TECHNIQUES
+//
+// 
+//###################################################################
 
 technique10 Simple10
 <
