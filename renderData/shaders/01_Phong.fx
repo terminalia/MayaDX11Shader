@@ -155,6 +155,32 @@ float SpecularStrength
 	int UIOrder = 13;
 > = 1.0;
 
+bool UseSpecularTexture
+<
+	string UIGroup = "Specularity";
+	string UIName = "Specular Map";
+	int UIOrder = 14;
+> = false;
+
+Texture2D SpecularTexture
+<
+	string UIGroup = "Specularity";
+	string ResourceName = "";
+	string UIWidget = "FilePicker";
+	string UIName = "Specular Map";
+	string ResourceType = "2D";
+	int mipmaplevels = NumberOfMipMaps;
+	int UIOrder = 15;
+	int UVEditorOrder = 4;
+>;
+
+SamplerState SamplerSpecular
+{
+	Filter = ANISOTROPIC;
+	AddressU = Wrap;
+	AddressV = Wrap;
+};
+
 //-------------------------------------------------------------------
 // SHADOWS
 
@@ -359,6 +385,11 @@ float4 frag(vOutput IN) : COLOR
 		}
 		else {
 			specular = ComputePhong(lightDir, worldNormal, normalize(IN.worldCameraDir)) * SpecularColor;
+		}
+
+		if (UseSpecularTexture) {
+			float4 specularTex = SpecularTexture.Sample(SamplerSpecular, IN.texcoord);
+			specular *= specularTex.r;
 		}
 		
 		float3 totalLight = (diffuse + specular) * light0Color * light0Intensity * Opacity;
