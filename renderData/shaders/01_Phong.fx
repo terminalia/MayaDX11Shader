@@ -16,6 +16,13 @@ float4x4 WorldInverseTranspose : WorldInverseTranspose;
 float4x4 WorldViewProjection : WorldViewProjection;
 float4x4 ViewInverse : ViewInverse;
 
+//Animation time
+float time : Time
+<
+	string UIWidget = "None";
+>;
+
+
 //	LIGHTS
 bool light0Enable : LIGHTENABLE
 <
@@ -322,6 +329,56 @@ SamplerState SamplerShadowDepth
 };
 
 //-------------------------------------------------------------------
+// UV MANIPULATION
+
+float2 uvSpeedXY 
+<
+	string UIGroup = "UV Manipulation";
+	string UIName = "UV Animation Speed";
+	int UIOrder = 0;
+> = {0.0f, 0.0f};
+
+float uvTileX 
+<
+	string UIGroup = "UV Manipulation";
+    string UIWidget = "slider";
+	string UIName = "UV Tile X";
+    float UIMin = 1;
+	float UIMax = 10;
+	int UIOrder = 1;
+> = 1.0f;
+
+float uvTileY
+<
+	string UIGroup = "UV Manipulation";
+    string UIWidget = "slider";
+	string UIName = "UV Tile Y";
+    float UIMin = 1;
+	float UIMax = 10;
+	int UIOrder = 1;
+> = 1.0f;
+
+float uvOffsetX
+<
+	string UIGroup = "UV Manipulation";
+    string UIWidget = "slider";
+	string UIName = "UV Offset X";
+    float UIMin = 0;
+	float UIMax = 10;
+	int UIOrder = 2;
+> = 0.0f;
+
+float uvOffsetY
+<
+	string UIGroup = "UV Manipulation";
+    string UIWidget = "slider";
+	string UIName = "UV Offset Y";
+    float UIMin = 0;
+	float UIMax = 10;
+	int UIOrder = 3;
+> = 0.0f;
+
+//-------------------------------------------------------------------
 // TRANSPARENCY
 
 float Opacity : OPACITY
@@ -452,7 +509,7 @@ float4 frag(vOutput IN) : COLOR
 	float3 worldNormal = normalize(IN.worldNormal);
 	float3 lightDir = normalize(-light0Dir);
 
-	float2 uv = IN.texcoord;
+	float2 uv = IN.texcoord * float2(uvTileX, uvTileY) + float2(uvOffsetX * 0.1, uvOffsetY * 0.1) + (time * uvSpeedXY);
 
 	// NORMAL MAP
 	if (UseNormalTexture) {
